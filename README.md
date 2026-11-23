@@ -3,6 +3,7 @@
 用 **TiaLink** 读取开源项目 [`rassulz/multirobot_painting_control_system`](https://github.com/rassulz/multirobot_painting_control_system) 中的 TIA Portal 项目 `PLC_SCADA_HMI`，再用 **three.js** 程序化重建为可交互的 3D 产线。
 
 - **在线预览**：https://tia-forge.github.io/plc-scada-hmi-3d/
+- **博客文章**：[AI + TiaLink：80 分钟，博途 PLC 项目变成 3D 场景](https://www.hubwiz.com/blog/tialink-plc-scada-hmi-3d-scene/)
 - **单文件版本**：[`PLC_SCADA_HMI_3D.html`](PLC_SCADA_HMI_3D.html)（约 680 KB，three.js 已内联）
 
 ![PLC_SCADA_HMI 3D 控制场景](images/01-overview.png)
