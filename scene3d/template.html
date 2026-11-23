@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>PLC_SCADA_HMI · 3D 控制场景</title>
+<style>
+  :root{
+    --bg:#070c12;
+    --card:linear-gradient(160deg,rgba(15,26,36,.93),rgba(7,14,21,.92));
+    --line:rgba(100,170,215,.18);
+    --text:#dce8f2;
+    --muted:#7f95a8;
+    --dim:#5c7284;
+    --accent:#35c2ff;
+    --green:#39d98a;
+    --amber:#ffb547;
+    --red:#ff5a5f;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:var(--bg);overflow:hidden}
+  body{
+    font-family:"Segoe UI",system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+  }
+  #scene{display:block;width:100%;height:100%;cursor:grab;touch-action:none;outline:none}
+  #hud{position:fixed;inset:0;z-index:10;pointer-events:none}
+
+  /* vignette + top fade for readability */
+  #hud::before{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:
+      radial-gradient(ellipse at 50% 45%,transparent 45%,rgba(2,5,8,.55) 100%),
+      linear-gradient(180deg,rgba(2,5,8,.55),transparent 18%,transparent 82%,rgba(2,5,8,.45));
+  }
+
+  .brand{
+    position:absolute;top:18px;left:20px;display:flex;gap:12px;align-items:center;
+  }
+  .logo{
+    width:44px;height:44px;border-radius:13px;flex:none;
+    background:linear-gradient(150deg,#14384f,#0a1b27);
+    border:1px solid rgba(90,190,245,.28);
+    box-shadow:0 10px 28px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.08);
+    display:grid;place-items:center;
+  }
+  .logo svg{width:26px;height:26px;display:block}
+  .brand h1{
+    margin:0;font-size:17px;letter-spacing:.1em;font-weight:700;color:#eaf5ff;
+    text-shadow:0 1px 12px rgba(0,0,0,.6);
+  }
+  .brand p{
+    margin:3px 0 0;font-size:10.5px;letter-spacing:.06em;color:#8ba7bb;
+    text-shadow:0 1px 8px rgba(0,0,0,.7);
+  }
+  .brand p b{color:#61cfff;font-weight:600}
+
+  .card{
+    position:absolute;pointer-events:auto;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:14px;
+    box-shadow:0 20px 46px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.055);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  }
+
+  .status{top:18px;right:20px;width:270px;padding:13px 14px 12px}
+  .status-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+  .run{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:.08em;color:#e8f4ff}
+  .led{
+    width:8px;height:8px;border-radius:50%;flex:none;background:#3b4a57;
+    box-shadow:0 0 0 3px rgba(255,255,255,.03);
+  }
+  .led.green{background:var(--green);box-shadow:0 0 10px rgba(57,217,138,.85),0 0 0 3px rgba(57,217,138,.12)}
+  .led.red{background:var(--red);box-shadow:0 0 10px rgba(255,90,95,.9),0 0 0 3px rgba(255,90,95,.14);animation:pulse 1s infinite}
+  .led.idle{background:#64798a}
+  @keyframes pulse{50%{opacity:.35}}
+  .chip{
+    font-size:9.5px;font-weight:700;letter-spacing:.1em;padding:4px 8px;border-radius:999px;
+    border:1px solid rgba(120,180,220,.2);color:#9db4c7;background:rgba(255,255,255,.035);
+  }
+  .chip.auto{color:#8fe3ff;border-color:rgba(53,194,255,.4);background:rgba(53,194,255,.1)}
+  .chip.manual{color:#ffd08a;border-color:rgba(255,181,71,.4);background:rgba(255,181,71,.1)}
+
+  .rows{display:flex;flex-direction:column}
+  .row{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    padding:5px 0;font-size:11px;color:#8ba3b6;border-bottom:1px dashed rgba(120,180,220,.1);
+  }
+  .row:last-child{border-bottom:0}
+  .row b{font-family:var(--mono);font-size:10.5px;font-weight:600;color:#d5e7f5;letter-spacing:.04em}
+  .row .tag{color:#6f8ea6;font-family:var(--mono);font-size:10px;margin-right:6px}
+  .counters{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin-top:10px;
+    background:rgba(120,180,220,.12);border:1px solid rgba(120,180,220,.12);border-radius:9px;overflow:hidden;
+  }
+  .counters div{background:rgba(8,16,23,.92);padding:7px 8px}
+  .counters em{display:block;font-style:normal;font-size:9px;letter-spacing:.08em;color:#6f8ea6;text-transform:uppercase}
+  .counters b{display:block;margin-top:3px;font-size:17px;font-family:var(--mono);color:#e6f4ff;font-weight:600;line-height:1}
+
+  .side{
+    top:232px;right:20px;width:270px;padding:13px 14px;
+    max-height:calc(100vh - 318px);overflow:auto;scrollbar-width:thin;scrollbar-color:#27485e transparent;
+  }
+  .side::-webkit-scrollbar{width:5px}
+  .side::-webkit-scrollbar-thumb{background:#27485e;border-radius:3px}
+  .card-title{
+    font-size:9.5px;letter-spacing:.14em;font-weight:700;color:#6f8ea6;text-transform:uppercase;
+    display:flex;align-items:center;gap:6px;margin:2px 0 6px;
+  }
+  .card-title::before{content:"";width:3px;height:9px;border-radius:2px;background:var(--accent);opacity:.75}
+  .divider{height:1px;background:linear-gradient(90deg,transparent,rgba(120,180,220,.18),transparent);margin:11px 0}
+
+  .toggle{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:5px 0;cursor:pointer;font-size:10.5px;color:#8ba3b6}
+  .toggle span{display:flex;align-items:center;gap:6px;font-family:var(--mono);letter-spacing:.02em}
+  .toggle i{width:5px;height:5px;border-radius:50%;background:#3c4d5b;flex:none}
+  .toggle input{
+    appearance:none;-webkit-appearance:none;width:30px;height:16px;border-radius:999px;flex:none;
+    background:#1a2732;border:1px solid rgba(120,180,220,.18);position:relative;cursor:pointer;
+    transition:background .18s,border-color .18s;margin:0;
+  }
+  .toggle input::after{
+    content:"";position:absolute;left:2px;top:2px;width:10px;height:10px;border-radius:50%;
+    background:#7e94a6;transition:left .18s,background .18s;
+  }
+  .toggle input:checked{background:rgba(255,90,95,.22);border-color:rgba(255,90,95,.55)}
+  .toggle input:checked::after{left:16px;background:var(--red)}
+  .toggle input:checked ~ span i{background:var(--red);box-shadow:0 0 7px rgba(255,90,95,.8)}
+
+  .mini{
+    appearance:none;border:1px solid rgba(255,90,95,.35);background:rgba(255,90,95,.09);
+    color:#ffb7ba;font-family:inherit;font-size:10px;font-weight:600;letter-spacing:.06em;
+    padding:7px 10px;border-radius:8px;cursor:pointer;width:100%;margin-top:6px;transition:.18s;
+  }
+  .mini:hover{background:rgba(255,90,95,.16);border-color:rgba(255,90,95,.6)}
+
+  .jog{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .jog button{
+    appearance:none;border:1px solid rgba(120,180,220,.16);background:rgba(255,255,255,.03);
+    color:#93aabf;font-family:var(--mono);font-size:9.5px;letter-spacing:.02em;
+    padding:8px 5px;border-radius:8px;cursor:pointer;transition:.18s;
+  }
+  .jog button:hover:not(:disabled){border-color:rgba(53,194,255,.45);color:#cfeaff}
+  .jog button.active{background:rgba(53,194,255,.13);border-color:rgba(53,194,255,.6);color:#a8e6ff;box-shadow:0 0 14px rgba(53,194,255,.12)}
+  .jog button:disabled{opacity:.32;cursor:not-allowed}
+
+  .pid-line{display:flex;align-items:center;justify-content:space-between;font-size:10px;color:#6f8ea6;margin:7px 0 2px;letter-spacing:.05em}
+  .pid-line b{font-family:var(--mono);font-size:12px;color:#dcefff;font-weight:600}
+  input[type=range]{
+    appearance:none;-webkit-appearance:none;width:100%;height:3px;border-radius:2px;outline:none;margin:6px 0 4px;
+    background:linear-gradient(90deg,#1f6db5,#35c2ff);
+  }
+  input[type=range]::-webkit-slider-thumb{
+    appearance:none;-webkit-appearance:none;width:12px;height:12px;border-radius:50%;
+    background:#e8f8ff;border:2px solid #35c2ff;box-shadow:0 0 10px rgba(53,194,255,.55);cursor:pointer;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:10px;height:10px;border-radius:50%;background:#e8f8ff;border:2px solid #35c2ff;cursor:pointer;
+  }
+  .bar{height:5px;border-radius:3px;background:#12222e;overflow:hidden;border:1px solid rgba(120,180,220,.1)}
+  .bar i{display:block;height:100%;width:34%;border-radius:3px;background:linear-gradient(90deg,#1f6db5,#35c2ff);transition:width .25s}
+
+  .toolbar{
+    position:absolute;left:50%;bottom:20px;transform:translateX(-50%);
+    display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:center;
+    padding:7px;border-radius:14px;max-width:calc(100vw - 36px);
+    background:linear-gradient(160deg,rgba(14,24,33,.94),rgba(7,13,19,.94));
+    border:1px solid rgba(100,170,215,.18);
+    box-shadow:0 20px 45px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.05);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    pointer-events:auto;
+  }
+  .tbtn{
+    appearance:none;border:1px solid rgba(120,180,220,.18);background:rgba(255,255,255,.035);
+    color:#b9cde0;font-family:inherit;font-size:10.5px;font-weight:600;letter-spacing:.06em;
+    padding:9px 12px;border-radius:9px;cursor:pointer;display:flex;align-items:center;gap:6px;
+    transition:.16s;white-space:nowrap;
+  }
+  .tbtn:hover{border-color:rgba(120,190,235,.5);background:rgba(120,190,235,.08);color:#e6f5ff}
+  .tbtn .ic{font-size:9px;opacity:.9}
+  .tbtn.primary{background:linear-gradient(180deg,#1f7d52,#145c3a);border-color:rgba(57,217,138,.45);color:#dcffed;box-shadow:0 8px 22px rgba(47,191,113,.2)}
+  .tbtn.primary:hover{background:linear-gradient(180deg,#279663,#176844)}
+  .tbtn.danger{background:linear-gradient(180deg,#7a2026,#571318);border-color:rgba(255,90,95,.45);color:#ffd6d8;box-shadow:0 8px 22px rgba(255,90,95,.14)}
+  .tbtn.danger:hover{background:linear-gradient(180deg,#962830,#6a181e)}
+  .tbtn.active{background:rgba(53,194,255,.13);border-color:rgba(53,194,255,.55);color:#b9ecff;box-shadow:inset 0 0 18px rgba(53,194,255,.08)}
+  .tbtn.ghost{color:#8ba3b6}
+
+  .hint{
+    position:absolute;left:21px;bottom:24px;font-size:10px;line-height:1.7;color:#5f7688;
+    max-width:300px;text-shadow:0 1px 10px rgba(0,0,0,.8);letter-spacing:.02em;
+  }
+  .hint b{color:#8ba8bd;font-weight:600}
+  .hint kbd{
+    font-family:var(--mono);font-size:9px;padding:1px 4px;border-radius:4px;
+    border:1px solid rgba(120,180,220,.2);background:rgba(255,255,255,.04);color:#9db4c7;
+  }
+
+  #toast{
+    position:fixed;left:50%;top:86px;transform:translate(-50%,-8px);
+    padding:9px 16px;border-radius:10px;font-size:11.5px;letter-spacing:.04em;color:#dff2ff;
+    background:linear-gradient(160deg,rgba(16,32,44,.96),rgba(8,17,25,.96));
+    border:1px solid rgba(53,194,255,.35);box-shadow:0 14px 34px rgba(0,0,0,.55),0 0 24px rgba(53,194,255,.08);
+    opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:20;white-space:nowrap;
+  }
+  #toast.show{opacity:1;transform:translate(-50%,0)}
+
+  @media (max-width:1080px){
+    .side{display:none}
+    .hint{max-width:250px}
+  }
+  @media (max-width:900px){
+    .hint{display:none}
+  }
+  @media (max-width:720px){
+    .brand p{display:none}
+    .brand h1{font-size:14px}
+    .status{width:232px;right:12px;top:12px;padding:11px}
+    .side{display:none}
+    .hint{display:none}
+    .toolbar{bottom:12px;gap:5px;padding:6px}
+    .tbtn{padding:8px 9px;font-size:9.5px}
+  }
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+
+<div id="hud">
+  <header class="brand">
+    <div class="logo" aria-hidden="true">
+      <svg viewBox="0 0 32 32" fill="none">
+        <rect x="4" y="5" width="24" height="22" rx="3" stroke="#4fc3ff" stroke-opacity=".75" stroke-width="1.4"/>
+        <path d="M9 12h6M9 16h9M9 20h4" stroke="#8fe3ff" stroke-width="1.4" stroke-linecap="round"/>
+        <circle cx="23" cy="12" r="1.7" fill="#39d98a"/>
+        <circle cx="23" cy="18" r="1.7" fill="#ffb547" fill-opacity=".85"/>
+        <path d="M24 23h4M26 21v4" stroke="#4fc3ff" stroke-width="1.2" stroke-linecap="round" stroke-opacity=".6"/>
+      </svg>
+    </div>
+    <div>
+      <h1>PLC_SCADA_HMI</h1>
+      <p>S7-1500 <b>CPU 1513F-1 PN</b> · ET 200SP · WinCC · <span style="color:#6f8ea6">3D CONTROL SCENE</span></p>
+    </div>
+  </header>
+
+  <section class="card status">
+    <div class="status-top">
+      <div class="run"><span id="runLed" class="led idle"></span><span id="runText">STOPPED</span></div>
+      <span id="modeChip" class="chip auto">AUTO</span>
+    </div>
+    <div class="rows">
+      <div class="row"><span><span class="tag">CV-101</span>输送机</span><b id="vCv">STOP</b></div>
+      <div class="row"><span><span class="tag">RB-101</span>喷涂机械手</span><b id="vRb101">IDLE</b></div>
+      <div class="row"><span><span class="tag">RB-102</span>取放机械手</span><b id="vRb102">IDLE</b></div>
+      <div class="row"><span><span class="tag">FN-101</span>风机</span><b id="vFn">STOP</b></div>
+      <div class="row"><span><span class="tag">ZS-101…104</span>光电传感器</span><b>4 / PN/IE_1</b></div>
+    </div>
+    <div class="counters">
+      <div><em>已喷涂</em><b id="vPainted">0</b></div>
+      <div><em>已下线</em><b id="vDelivered">0</b></div>
+      <div><em>报警</em><b id="vAlarms">0</b></div>
+    </div>
+  </section>
+
+  <aside class="card side" id="simWrap">
+    <div class="card-title">故障模拟 · SIM</div>
+    <label class="toggle"><input type="checkbox" data-sim="cv"><span><i></i>SIM_CV101</span></label>
+    <label class="toggle"><input type="checkbox" data-sim="rb101"><span><i></i>SIM_RB101</span></label>
+    <label class="toggle"><input type="checkbox" data-sim="rb102"><span><i></i>SIM_RB102</span></label>
+    <label class="toggle"><input type="checkbox" data-sim="fn"><span><i></i>SIM_FN101</span></label>
+    <button class="mini" data-action="repair">REPAIR ALL</button>
+
+    <div class="divider"></div>
+    <div class="card-title">手动点动 · MANUAL</div>
+    <div class="jog">
+      <button data-jog="cv" disabled>CV-101</button>
+      <button data-jog="fn" disabled>FN-101</button>
+      <button data-jog="rb101" disabled>RB-101</button>
+      <button data-jog="rb102" disabled>RB-102</button>
+    </div>
+
+    <div class="divider"></div>
+    <div class="card-title">PID 回路</div>
+    <div class="pid-line"><span>SETPOINT</span><b><span id="pidSp">62</span> %</b></div>
+    <input id="spRange" type="range" min="0" max="100" value="62" aria-label="PID setpoint">
+    <div class="pid-line"><span>PROCESS VALUE</span><b><span id="pidVal">34.0</span> %</b></div>
+    <div class="bar"><i id="pidPv"></i></div>
+  </aside>
+
+  <nav class="toolbar">
+    <button class="tbtn primary" data-action="start"><span class="ic">▶</span>START</button>
+    <button class="tbtn" data-action="stop"><span class="ic">■</span>STOP</button>
+    <button class="tbtn" data-tbtn="auto">AUTO</button>
+    <button class="tbtn" data-tbtn="manual">MANUAL</button>
+    <button class="tbtn danger" data-action="estop"><span class="ic">✕</span>E-STOP</button>
+    <button class="tbtn ghost" data-action="reset">RESET</button>
+    <button class="tbtn ghost" data-action="hmi">HMI 画面</button>
+    <button class="tbtn ghost" id="viewReset">视角复位</button>
+  </nav>
+
+  <div class="hint">
+    <b>左键拖拽</b> 旋转 · <b>滚轮</b> 缩放 · <b>右键 / Shift</b> 平移<br>
+    点击 3D 控制面板按钮，或 HMI 屏幕顶部标签切换画面<br>
+    快捷键 <kbd>Space</kbd> 启停 · <kbd>A</kbd> 自动 · <kbd>M</kbd> 手动 · <kbd>E</kbd> 急停 · <kbd>R</kbd> 复位
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- three.js r150.1 · MIT · inlined so this file has no external dependencies -->
+<script>/*__THREE_JS__*/</script>
+<script>/*__APP_JS__*/</script>
+</body>
+</html>
