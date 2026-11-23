@@ -1,6 +1,6 @@
 # PLC_SCADA_HMI · 3D Control Scene
 
-用 **TiaLink** 读取 TIA Portal 项目 `PLC_SCADA_HMI`，再用 **three.js** 程序化重建为可交互的 3D 产线。
+用 **TiaLink** 读取开源项目 [`rassulz/multirobot_painting_control_system`](https://github.com/rassulz/multirobot_painting_control_system) 中的 TIA Portal 项目 `PLC_SCADA_HMI`，再用 **three.js** 程序化重建为可交互的 3D 产线。
 
 - **在线预览**：https://tia-forge.github.io/plc-scada-hmi-3d/
 - **单文件版本**：[`PLC_SCADA_HMI_3D.html`](PLC_SCADA_HMI_3D.html)（约 680 KB，three.js 已内联）
@@ -65,6 +65,7 @@ python3 scene3d/build.py
 
 ## 数据来源
 
+- 来源：[`rassulz/multirobot_painting_control_system`](https://github.com/rassulz/multirobot_painting_control_system)（MIT License）
 - 项目：`PLC_SCADA_HMI`（TIA Portal V19）
 - 设备：S7-1500 / CPU 1513F-1 PN、ET 200SP / IM 155-6 PN ST、HMI_1、PC-System_1
 - 块：OB1 `Main`、FB2 `Auto_mode`、FB3 `Manu_mode`、两个实例 DB
@@ -72,9 +73,10 @@ python3 scene3d/build.py
 - 画面：`Main Part`、`Error_Status`、`PID`
 - 网络：PROFINET `PN/IE_1`，PLC `172.31.17.15`
 
-原始项目文件不在本仓库中；本仓库只包含可视化代码和截图。
+3D 场景是对其中 PLC/HMI 数据的程序化可视化，机械结构做了简化，不代表原始设备的精确比例或节拍。原始项目文件不在本仓库中；本仓库只包含可视化代码和截图。
 
 ## 第三方
 
 - [three.js](https://threejs.org/) r150.1 — MIT License，Copyright 2010-2023 Three.js Authors。
-- 其余场景几何、纹理、HMI 画面、标签和粒子贴图均由本项目代码程序化生成。
+- [multirobot_painting_control_system](https://github.com/rassulz/multirobot_painting_control_system) — MIT License，原始 TIA Portal 项目与 HMI 画面来源。
+- 其余场景几何、纹理、标签和粒子贴图均由本项目代码程序化生成。
