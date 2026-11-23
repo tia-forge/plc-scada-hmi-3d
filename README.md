@@ -4,7 +4,6 @@
 
 - **在线预览**：https://tia-forge.github.io/plc-scada-hmi-3d/
 - **单文件版本**：[`PLC_SCADA_HMI_3D.html`](PLC_SCADA_HMI_3D.html)（约 680 KB，three.js 已内联）
-- **中文博客**：[`blog-3d-scene.md`](blog-3d-scene.md)
 
 ![PLC_SCADA_HMI 3D 控制场景](images/01-overview.png)
 
@@ -47,8 +46,7 @@ start PLC_SCADA_HMI_3D.html     # Windows
 ```text
 PLC_SCADA_HMI_3D.html    # 最终单文件（three.js 内联）
 index.html               # GitHub Pages 入口，重定向到上面的单文件
-blog-3d-scene.md         # 中文博客：流程、实现与踩坑
-images/                  # 博客配图
+images/                  # README 配图
 scene3d/
   app.js                 # 场景、仿真、交互源码
   template.html          # HTML/CSS 模板
@@ -74,13 +72,9 @@ python3 scene3d/build.py
 - 画面：`Main Part`、`Error_Status`、`PID`
 - 网络：PROFINET `PN/IE_1`，PLC `172.31.17.15`
 
-原始项目文件不在本仓库中；本仓库只包含可视化代码、截图和博客。
+原始项目文件不在本仓库中；本仓库只包含可视化代码和截图。
 
 ## 第三方
 
 - [three.js](https://threejs.org/) r150.1 — MIT License，Copyright 2010-2023 Three.js Authors。
 - 其余场景几何、纹理、HMI 画面、标签和粒子贴图均由本项目代码程序化生成。
-
-## 博客
-
-完整过程见 [`blog-3d-scene.md`](blog-3d-scene.md)：从 TiaLink 数据到场景映射、HMI Canvas、产线状态机，以及 IK、pointer-events、粒子剔除等六个坑的复盘。
