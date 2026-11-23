@@ -1568,7 +1568,7 @@
 
   function animate() {
     const dt = Math.min(clock.getDelta(), 0.1);
-    updateSim(dt);
+    if (!window.__pauseSim) updateSim(dt);
     updateCamera();
 
     uiTimer += dt;
@@ -1612,6 +1612,9 @@
   window.__panelButtons = panelButtons;
   window.__hmiScreen = hmiScreen;
   window.__camera = camera;
+  window.__renderer = renderer;
+  window.__renderNow = () => renderer.render(scene, camera);
+  window.__drawHMI = drawHMI;
   window.__sprayDebug = () => {
     let n = 0, minY = 99, maxY = -99;
     for (let i = 0; i < SPRAY_N; i++) {
